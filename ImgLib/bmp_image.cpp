@@ -3,10 +3,14 @@
 #include "pack_defines.h"
 
 #include <array>
+#include <cstdint>
 #include <fstream>
 #include <string_view>
 
 using namespace std;
+
+const int BYTE_IN_PIXEL = 3;
+const int ALIGMENT = 4;
 
 namespace img_lib {
 
@@ -35,7 +39,7 @@ namespace img_lib {
 
     // функция вычисления отступа по ширине
     static int GetBMPStride(int w) {
-        return 4 * ((w * 3 + 3) / 4);
+        return ALIGMENT * ((w * BYTE_IN_PIXEL + BYTE_IN_PIXEL) / ALIGMENT);
     }
 
     // напишите эту функцию
@@ -93,11 +97,17 @@ namespace img_lib {
         }
         BitmapFileHeader file_header;
         ifs.read(reinterpret_cast<char*>(&file_header), sizeof(file_header));
+        if(!ifs.good()){
+            return {};
+        }
         if (file_header.sign[0] != 'B' || file_header.sign[1] != 'M') {
             return {};
         }
         BitmapInfoHeader info_header;
         ifs.read(reinterpret_cast<char*>(&info_header), sizeof(info_header));
+        if(!ifs.good()){
+            return {};
+        }
 
         int w = info_header.width;
         int h = info_header.height;
@@ -108,6 +118,9 @@ namespace img_lib {
         for (int y = h - 1; y >= 0; --y) {
             img_lib::Color* line = result.GetLine(y);
             ifs.read(buffer.data(), stride);
+            if(!ifs.good()){
+                return {};
+            }
 
             for (int x = 0; x < w; ++x) {
                 line[x].b = static_cast<std::byte>(buffer[x * 3 + 0]);
